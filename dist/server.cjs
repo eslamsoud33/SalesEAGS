@@ -34,7 +34,7 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3e3;
   const HMR_PORT = Number(process.env.HMR_PORT) || 24679;
   app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "https://eslamsoud.github.io");
+    res.header("Access-Control-Allow-Origin", "https://eslamsoud33.github.io");
     res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type");
     if (req.method === "OPTIONS") {

@@ -28,26 +28,16 @@ var import_vite = require("vite");
 var import_genai = require("@google/genai");
 var import_dotenv = __toESM(require("dotenv"), 1);
 import_dotenv.default.config();
-var API_KEY = process.env.GEMINI_API_KEY || "AIzaSyBWfIvlYVSioQhhq90Hw93hN9ZNk_h5DLA";
 async function startServer() {
   const app = (0, import_express.default)();
   const PORT = Number(process.env.PORT) || 3e3;
   const HMR_PORT = Number(process.env.HMR_PORT) || 24679;
-  app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "https://eslamsoud33.github.io");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type");
-    if (req.method === "OPTIONS") {
-      return res.sendStatus(200);
-    }
-    next();
-  });
   app.use(import_express.default.json());
   app.post("/api/gemini/chat", async (req, res) => {
     try {
       const { systemInstruction, history, message } = req.body;
       const ai = new import_genai.GoogleGenAI({
-        apiKey: API_KEY,
+        apiKey: process.env.GEMINI_API_KEY,
         httpOptions: { headers: { "User-Agent": "aistudio-build" } }
       });
       const chat = ai.chats.create({
@@ -84,7 +74,7 @@ async function startServer() {
         return res.status(400).json({ error: "Query is required" });
       }
       const ai = new import_genai.GoogleGenAI({
-        apiKey: API_KEY,
+        apiKey: process.env.GEMINI_API_KEY,
         httpOptions: { headers: { "User-Agent": "aistudio-build" } }
       });
       const systemInstruction = `\u0623\u0646\u062A \u062E\u0628\u064A\u0631 \u0627\u0642\u062A\u0635\u0627\u062F\u064A \u0648\u0645\u062E\u062A\u0635 \u0641\u064A \u0648\u0628\u0648\u0631\u0635\u0629 \u0648\u062D\u0631\u0643\u0629 \u0623\u0633\u0648\u0627\u0642 \u0627\u0644\u0633\u0644\u0639\u060C \u0648\u0627\u0644\u0632\u064A\u0648\u062A \u0627\u0644\u0646\u0628\u0627\u062A\u064A\u0629 \u0648\u0627\u0644\u0635\u0646\u0627\u0639\u064A\u0629 (\u0645\u062B\u0644 \u0632\u064A\u062A \u0627\u0644\u062E\u0644\u064A\u0637\u060C \u0632\u064A\u062A \u0627\u0644\u0623\u0648\u0644\u064A\u0646\u060C \u0632\u064A\u062A \u0627\u0644\u0635\u0648\u064A\u0627\u060C \u0632\u064A\u062A \u0627\u0644\u0646\u062E\u064A\u0644\u060C \u0627\u0644\u062F\u0648\u0627\u0631 \u0648\u063A\u064A\u0631\u0647\u0627).
@@ -125,19 +115,8 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = import_path.default.join(process.cwd(), "dist");
-    const staticOptions = {
-      setHeaders: (res, filePath) => {
-        if (filePath.endsWith(".js") || filePath.endsWith(".mjs")) {
-          res.setHeader("Content-Type", "application/javascript");
-        } else if (filePath.endsWith(".css")) {
-          res.setHeader("Content-Type", "text/css");
-        }
-      }
-    };
-    app.use(import_express.default.static(distPath, staticOptions));
-    app.use("/SalesEAGS", import_express.default.static(distPath, staticOptions));
-    app.get(["/SalesEAGS", "/SalesEAGS/*", "*"], (req, res, next) => {
-      if (req.path.startsWith("/api/")) return next();
+    app.use(import_express.default.static(distPath));
+    app.get("*", (req, res) => {
       res.sendFile(import_path.default.join(distPath, "index.html"));
     });
   }

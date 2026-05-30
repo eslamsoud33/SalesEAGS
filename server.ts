@@ -141,12 +141,12 @@ async function startServer() {
       }
     };
 
-    // دعم المسار الأساسي ومسار /Sales معاً في نفس الوقت
+    // دعم المسار الأساسي ومسار /SalesEAGS معاً في نفس الوقت
     app.use(express.static(distPath, staticOptions));
-    app.use("/Sales", express.static(distPath, staticOptions));
+    app.use("/SalesEAGS", express.static(distPath, staticOptions));
 
     // توجيه كل طلبات الصفحات لملف React لتشغيله
-    app.get(["/Sales", "/Sales/*", "*"], (req, res, next) => {
+    app.get(["/SalesEAGS", "/SalesEAGS/*", "*"], (req, res, next) => {
       if (req.path.startsWith('/api/')) return next();
       res.sendFile(path.join(distPath, "index.html"));
     });

@@ -2,7 +2,6 @@
   "name": "react-example",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://eslamsoud33.github.io/SalesEAGS/",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"

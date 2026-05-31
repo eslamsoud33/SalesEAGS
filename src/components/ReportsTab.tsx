@@ -380,22 +380,23 @@ export default function ReportsTab({
 "${settings.aiRetentionGuidelines || 'قدم رسالة ترحيبية تشجعه على استمرار التعامل معنا، مع توضيح أننا نهتم بوجوده معنا كشريك نجاح.'}"
 أريد فقط نص الرسالة بدون أي مقدمات أخرى لتكون جاهزة للإرسال.`;
 
-      const response = await fetch('/api/gemini/chat', {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي غير مضاف');
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: 'أنت مساعد مبيعات احترافي.',
-          history: [],
-          message: userMessage
+          systemInstruction: { parts: [{ text: 'أنت مساعد مبيعات احترافي.' }] },
+          contents: [{ role: 'user', parts: [{ text: userMessage }] }]
         })
       });
 
-      if (!response.ok) {
-        throw new Error('فشل في الاتصال بمساعد الذكاء الاصطناعي');
-      }
-
       const data = await response.json();
-      const messageText = encodeURIComponent(data.text);
+      if (data.error) throw new Error(data.error.message);
+      
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const messageText = encodeURIComponent(aiText);
       let phone = customer.phone;
       if (phone.startsWith('0')) {
         phone = '20' + phone.substring(1);

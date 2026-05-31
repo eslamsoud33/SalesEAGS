@@ -176,19 +176,33 @@ export default function ManageTab({
     setMarketSearchError('');
 
     try {
-      const response = await fetch('/api/gemini/market-research', {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي (API Key) غير موجود في ملف .env!');
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: finalQuery })
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: 'أنت خبير اقتصادي ومختص في وبورصة وحركة أسواق السلع، والزيوت النباتية والصناعية. أجب بدقة وموثوقية بالاعتماد على نتائج محرك بحث جوجل المتاحة لديك، موضحاً الحركة العالمية والمحلية. اكتب بأسلوب منظم.' }] },
+          contents: [{ role: 'user', parts: [{ text: finalQuery }] }],
+          tools: [{ googleSearch: {} }]
+        })
       });
 
-      if (!response.ok) {
-        throw new Error('فشل نظام البحث بالذكاء الاصطناعي في جلب البيانات الحالية من البورصة ومحرك البحث.');
-      }
-
       const data = await response.json();
-      setMarketSearchResult(data.text || '');
-      setMarketSearchSources(data.sources || []);
+      if (data.error) throw new Error(data.error.message);
+      
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      setMarketSearchResult(aiText);
+      
+      const groundingChunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      const sources = groundingChunks
+        .filter((chunk: any) => chunk.web && chunk.web.uri)
+        .map((chunk: any) => ({
+          title: chunk.web.title || "مصدر خارجي",
+          uri: chunk.web.uri
+        }));
+      setMarketSearchSources(sources);
     } catch (err: any) {
       setMarketSearchError(err.message || 'حدث خطأ غير متوقع');
     } finally {
@@ -251,22 +265,29 @@ export default function ManageTab({
 العميل المستهدف ينتمي لفئة: ${aiChatCategory}.${customerContext}
 المطلوب: قم بتقديم نصائح للتعامل، اقترح رسائل ترويجية، وأجب عن استفسارات المندوب بناءً على المعطيات أعلاه وفئة العميل. اجعل إجابتك واضحة، مهنية، وموجهة لتحقيق ديل جيد. استخدم تنسيق Markdown للخط العريض والقوائم.`;
 
-      const response = await fetch('/api/gemini/chat', {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي (API Key) غير موجود في ملف .env!');
+
+      const formattedContents = aiChatHistory.map(h => ({
+        role: h.role,
+        parts: [{ text: h.text }]
+      }));
+      formattedContents.push({ role: 'user', parts: [{ text: userMessage }] });
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction,
-          history: aiChatHistory,
-          message: userMessage
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          contents: formattedContents
         })
       });
 
-      if (!response.ok) {
-        throw new Error('فشل في الاتصال بمساعد الذكاء الاصطناعي');
-      }
-
       const data = await response.json();
-      setAiChatHistory(prev => [...prev, { role: 'model', text: data.text }]);
+      if (data.error) throw new Error(data.error.message);
+      
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      setAiChatHistory(prev => [...prev, { role: 'model', text: aiText }]);
     } catch (err: any) {
       alert("حدث خطأ أثناء التواصل مع الذكاء الاصطناعي: " + err.message);
       setAiChatHistory(prev => prev.slice(0, -1));

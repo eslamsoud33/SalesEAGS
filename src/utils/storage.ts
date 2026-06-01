@@ -9,7 +9,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultDiscounts: [1, 1.25, 1.5],
   googleSheetsUrl: 'https://script.google.com/macros/s/AKfycbwD31gqJycRFZO5EKs9aGx2-IeLLr_MGqKLvXZu_Yqo-AGmJ5_SCqrUwaPkIinOkrxH/exec',
   currency: 'ج.م',
-  aiPitchGuidelines: ''
+  aiPitchGuidelines: '',
+  geminiApiKey: ''
 };
 
 export const DEFAULT_PRODUCTS: Product[] = [];

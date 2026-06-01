@@ -51,20 +51,25 @@ export default function CustomersTab({ customers, onAddCustomer, onEditCustomer,
 "${settings.aiRetentionGuidelines || 'قدم رسالة ترحيبية تشجعه على استمرار التعامل معنا، مع توضيح أننا نهتم بوجوده معنا كشريك نجاح.'}"
 أريد فقط نص الرسالة بدون أي مقدمات أخرى لتكون جاهزة للإرسال مباشرة للعميل وبصيغة جذابة.`;
 
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي غير مضاف');
+      const apiKey = settings.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي غير مضاف! يرجى إضافته من صفحة الإعدادات.');
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: 'أنت مساعد مبيعات احترافي.' }] },
+          systemInstruction: { parts: [{ text: 'أنت مساعد مبيعات احترافي يتحدث العربية بطلاقة.' }] },
           contents: [{ role: 'user', parts: [{ text: userMessage }] }]
         })
       });
 
       const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) {
+        if (data.error.message.includes('Quota') || data.error.message.includes('quota')) {
+          throw new Error('تم تجاوز الحد المسموح للاستخدام المجاني للذكاء الاصطناعي. يرجى الانتظار دقيقة ثم المحاولة مجدداً.');
+        }
+        throw new Error(data.error.message);
+      }
       
       const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       const messageText = encodeURIComponent(aiText);
@@ -443,8 +448,8 @@ export default function CustomersTab({ customers, onAddCustomer, onEditCustomer,
 
 أرسل JSON فقط بدون أي علامات ماركداون وبدون كلام إضافي.`;
 
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي غير مضاف');
+      const apiKey = settings.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي غير مضاف! يرجى إضافته من صفحة الإعدادات.');
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
@@ -456,7 +461,12 @@ export default function CustomersTab({ customers, onAddCustomer, onEditCustomer,
       });
 
       const rawData = await response.json();
-      if (rawData.error) throw new Error(rawData.error.message);
+      if (rawData.error) {
+        if (rawData.error.message.includes('Quota') || rawData.error.message.includes('quota')) {
+          throw new Error('تم تجاوز الحد المسموح للاستخدام المجاني. يرجى الانتظار دقيقة ثم المحاولة مجدداً لعدم إرهاق السيرفر.');
+        }
+        throw new Error(rawData.error.message);
+      }
       
       let text = rawData.candidates?.[0]?.content?.parts?.[0]?.text || '';
       

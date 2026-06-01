@@ -133,6 +133,7 @@ export default function ManageTab({
   const [repName, setRepName] = useState(settings.representativeName || '');
   const [repPhone, setRepPhone] = useState(settings.representativePhone || '01228466613');
   const [invoiceAppName, setInvoiceAppName] = useState(settings.appName || 'الأخوة المتحدون EAG');
+  const [geminiApiKey, setGeminiApiKey] = useState(settings.geminiApiKey || '');
   const [googlePassword, setGooglePassword] = useState('');
 
   // Delegate live tracking state
@@ -176,8 +177,8 @@ export default function ManageTab({
     setMarketSearchError('');
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي (API Key) غير موجود في ملف .env!');
+      const apiKey = settings.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي (API Key) غير موجود! يرجى إضافته من صفحة الإعدادات.');
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
@@ -190,7 +191,12 @@ export default function ManageTab({
       });
 
       const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) {
+        if (data.error.message.includes('Quota') || data.error.message.includes('quota')) {
+          throw new Error('تم تجاوز الحد المسموح للاستخدام المجاني للذكاء الاصطناعي. يرجى الانتظار دقيقة ثم المحاولة مجدداً.');
+        }
+        throw new Error(data.error.message);
+      }
       
       const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       setMarketSearchResult(aiText);
@@ -265,8 +271,8 @@ export default function ManageTab({
 العميل المستهدف ينتمي لفئة: ${aiChatCategory}.${customerContext}
 المطلوب: قم بتقديم نصائح للتعامل، اقترح رسائل ترويجية، وأجب عن استفسارات المندوب بناءً على المعطيات أعلاه وفئة العميل. اجعل إجابتك واضحة، مهنية، وموجهة لتحقيق ديل جيد. استخدم تنسيق Markdown للخط العريض والقوائم.`;
 
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي (API Key) غير موجود في ملف .env!');
+      const apiKey = settings.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error('مفتاح الذكاء الاصطناعي (API Key) غير موجود! يرجى إضافته من صفحة الإعدادات.');
 
       const formattedContents = aiChatHistory.map(h => ({
         role: h.role,
@@ -284,7 +290,12 @@ export default function ManageTab({
       });
 
       const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) {
+        if (data.error.message.includes('Quota') || data.error.message.includes('quota')) {
+          throw new Error('تم تجاوز الحد المسموح للاستخدام المجاني للذكاء الاصطناعي. يرجى الانتظار دقيقة ثم المحاولة مجدداً.');
+        }
+        throw new Error(data.error.message);
+      }
       
       const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       setAiChatHistory(prev => [...prev, { role: 'model', text: aiText }]);
@@ -368,7 +379,8 @@ export default function ManageTab({
       aiRetentionGuidelines: retentionGuidelines.trim(),
       representativeName: repName.trim(),
       representativePhone: repPhone.trim(),
-      appName: invoiceAppName.trim()
+      appName: invoiceAppName.trim(),
+      geminiApiKey: geminiApiKey.trim()
     });
     setSaveSuccessMsg('تم حفظ الإعدادات بنجاح!');
     setTimeout(() => setSaveSuccessMsg(''), 3000);
@@ -1937,6 +1949,25 @@ export default function ManageTab({
             </h3>
 
             <div className="flex flex-col gap-3.5">
+              {/* Gemini API Key Field */}
+              <div className="border border-amber-100 rounded-xl p-3 bg-amber-50/20 mt-1">
+                <label className="block text-xs font-black text-amber-950 mb-1.5 flex items-center gap-1.5" style={{ color: '#b57a05' }}>
+                  <Sparkles className="h-4 w-4 text-[#DD6B20]" />
+                  مفتاح الذكاء الاصطناعي الخاص بك (Gemini API Key):
+                </label>
+                <input
+                  type="password"
+                  placeholder="أدخل مفتاح AI (AI Studio Key) لتشغيل الذكاء مباشرة من المتصفح"
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  dir="ltr"
+                  className="w-full bg-[#FFFFFF] border border-slate-200 rounded-lg p-2.5 text-xs text-[#1A365D] font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+                <p className="text-[10px] text-gray-400 mt-1 leading-normal">
+                  مفتاح Gemini API يتم حفظه بشكل آمن تماماً داخل متصفح جهازك الحالي فقط (localStorage) ولن يتم رفعه أو مشاركته.
+                </p>
+              </div>
+
               {/* AI Pitch Guidelines Field */}
               <div className="border border-indigo-100 rounded-xl p-3 bg-indigo-50/20 mt-1">
                 <label className="block text-xs font-black text-indigo-950 mb-1.5 flex items-center gap-1.5" style={{ color: '#4d1a21' }}>

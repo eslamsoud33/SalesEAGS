@@ -94,6 +94,7 @@ export interface AppSettings {
   representativeName?: string; // اسم المندوب
   representativePhone?: string; // رقم هاتف المندوب
   appName?: string; // الاسم ليظهر في الفواتير (اسم النشاط)
+  geminiApiKey?: string; // مفتاح الذكاء الاصطناعي المخزن محلياً
 }
 
 export interface UserAuth {
